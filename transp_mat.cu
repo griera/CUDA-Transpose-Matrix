@@ -9,14 +9,14 @@
  */
 #define THREADS_PER_BLOCK_2D 16
 
-// Simple utility function to check for CUDA runtime errors
+/* Simple utility function to check for CUDA runtime errors */
 void checkCUDAError(const char* msg);
 
-// Host function that transposes a matrix
+/* Host function that transposes a matrix */
 void transpose_cpu(const char* mat_in, char* mat_out, unsigned int rows,
         unsigned int cols);
 
-// Kernel code
+/* Kernel code */
 __global__ void transpose_gpu(const char* mat_in, char* mat_out,
         unsigned int rows, unsigned int cols) {
     unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -31,7 +31,8 @@ __global__ void transpose_gpu(const char* mat_in, char* mat_out,
 }
 
 int main(int argc, char** argv) {
-    // Process command-line arguments
+
+    /* Process command-line arguments */
     if (argc != 3) {
         fprintf(stderr, "Usage: %s rows columns\n", argv[0]);
         fprintf(stderr, "       rows is the number of rows of the input matrix\n");
@@ -45,27 +46,27 @@ int main(int argc, char** argv) {
     unsigned int rows = atoi(argv[1]);
     unsigned int cols = atoi(argv[2]);
 
-    // Pointer for host memory
+    /* Pointer for host memory */
     char *h_mat_in, *h_mat_out;
     size_t mat_size = rows * cols * sizeof(char);
 
-    // Pointer for device memory
+    /* Pointer for device memory */
     char *dev_mat_in, *dev_mat_out;
 
-    // Allocate host and device memory.
+    /* Allocate host and device memory */
     h_mat_in = (char *) malloc(mat_size);
     h_mat_out = (char *) malloc(mat_size);
 
     cudaMalloc(&dev_mat_in, mat_size);
     cudaMalloc(&dev_mat_out, mat_size);
 
-    // Check for any CUDA errors
+    /* Check for any CUDA errors */
     checkCUDAError("cudaMalloc");
 
-    // Fixed seed for illustration
+    /* Fixed seed for illustration */
     srand(2047);
 
-    // Initialize host memory
+    /* Initialize host memory */
     for (unsigned int i = 0; i < rows; ++i) {
         for (unsigned int j = 0; j < cols; ++j) {
             h_mat_in[i * cols + j] =  rand() % (rows * cols);
@@ -88,7 +89,7 @@ int main(int argc, char** argv) {
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsed_time_ms, start, stop);
 
-    // Verify the correctness of transposed matrix computed on GPU
+    /* Verify the correctness of transposed matrix computed on GPU */
     for (unsigned int i = 0; i < cols; ++i) {
         for (unsigned int j = 0; j < rows; ++j) {
             assert(h_mat_out[i * rows + j] == h_mat_in[j * cols + i]);
@@ -100,13 +101,13 @@ int main(int argc, char** argv) {
 
     /*------------------------ COMPUTATION ON GPU ----------------------------*/
 
-    // Host to device memory copy
+    /* Host to device memory copy */
     cudaMemcpy(dev_mat_in, h_mat_in, mat_size, cudaMemcpyHostToDevice);
 
-    // Check for any CUDA errors
+    /* Check for any CUDA errors */
     checkCUDAError("cudaMemcpy");
 
-    // Set grid and block dimensions properly
+    /* Set grid and block dimensions properly */
     unsigned int grid_rows = (rows + THREADS_PER_BLOCK_2D - 1) / THREADS_PER_BLOCK_2D;
     unsigned int grid_cols = (cols + THREADS_PER_BLOCK_2D - 1) / THREADS_PER_BLOCK_2D;
     dim3 dimGrid(grid_cols, grid_rows);
@@ -115,23 +116,23 @@ int main(int argc, char** argv) {
     cudaEventRecord(start, 0);
     // cudaEventSynchronize(start); needed?
 
-    // Launch kernel
+    /* Launch kernel */
     transpose_gpu<<<dimGrid, dimBlock>>>(dev_mat_in, dev_mat_out, rows, cols);
 
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&elapsed_time_ms, start, stop);
 
-    // Check for any CUDA errors
+    /* Check for any CUDA errors */
     checkCUDAError("kernel invocation");
 
-    // device to host copy
+    /* device to host copy */
     cudaMemcpy(h_mat_out, dev_mat_out, mat_size, cudaMemcpyDeviceToHost);
 
-    // Check for any CUDA errors
+    /* Check for any CUDA errors */
     checkCUDAError("cudaMemcpy");
 
-    // Verify the correctness of transposed matrix computed on GPU
+    /* Verify the correctness of transposed matrix computed on GPU */
     for (unsigned int i = 0; i < cols; ++i) {
         for (unsigned int j = 0; j < rows; ++j) {
             assert(h_mat_out[i * rows + j] == h_mat_in[j * cols + i]);
@@ -149,13 +150,13 @@ int main(int argc, char** argv) {
         printf("\n");
     }*/
 
-    // Free host and device memory
+    /* Free host and device memory */
     free(h_mat_in);
     free(h_mat_out);
     cudaFree(dev_mat_in);
     cudaFree(dev_mat_out);
 
-    // Check for any CUDA errors
+    /* Check for any CUDA errors */
     checkCUDAError("cudaFree");
 }
 
